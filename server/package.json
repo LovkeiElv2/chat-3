@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "npm run build:client && node index.js",
     "dev": "nodemon index.js",
     "build:client": "cd ../client && npm install && npm run build"
   },
