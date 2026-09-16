@@ -1,4 +1,4 @@
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:4000";
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || window.location.origin;
 
 export function initialsOf(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
