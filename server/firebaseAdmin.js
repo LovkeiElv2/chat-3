@@ -7,7 +7,9 @@ function loadServiceAccount() {
   const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
   if (!b64) {
     throw new Error(
-      "FIREBASE_SERVICE_ACCOUNT_BASE64 не задан. Смотри README.md, раздел 2."
+      "FIREBASE_SERVICE_ACCOUNT_BASE64 не задан. Добавьте его в Render: " +
+        "Dashboard -> nexa-chat -> Environment. Значение должно быть Base64 " +
+        "от JSON Firebase service account."
     );
   }
   const json = Buffer.from(b64, "base64").toString("utf8");
