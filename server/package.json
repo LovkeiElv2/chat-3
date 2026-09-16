@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "build:client": "cd ../client && npm install && npm run build"
+    "build:client": "cd ../client && npm install && npm run build",
+    "postinstall": "npm run build:client"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.2.0",
