@@ -172,7 +172,16 @@ app.get("/api/chats/:chatId/messages", requireAuth, async (req, res) => {
     .orderBy("createdAt", "asc")
     .limit(200)
     .get();
-  res.json(msgsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  const memberSnap = await db
+    .collection("users")
+    .where("uid", "in", chatSnap.data().members.slice(0, 10))
+    .get();
+  const memberNames = new Map(memberSnap.docs.map((doc) => [doc.id, doc.data().displayName]));
+  res.json(msgsSnap.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+    senderName: memberNames.get(d.data().senderId) || "Пользователь",
+  })));
 });
 
 function randomColor() {
@@ -231,6 +240,7 @@ io.on("connection", (socket) => {
       id: msgRef.id,
       chatId,
       senderId: uid,
+      senderName: (await db.collection("users").doc(uid).get()).data()?.displayName || "Пользователь",
       text: message.text,
       createdAt: { _seconds: Math.floor(Date.now() / 1000) },
     };

@@ -102,6 +102,8 @@ export default function ChatWindow({ chatId, peer, me, token, socket, isPeerOnli
               text={m.text}
               time={m.createdAt?._seconds}
               isOwn={m.senderId === me.uid}
+              senderName={m.senderName}
+              showSender={peer.type === "group" && m.senderId !== me.uid}
             />
           ))
         )}
