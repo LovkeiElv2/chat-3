@@ -276,6 +276,64 @@ a {
   color: var(--text-primary);
 }
 
+.group-tab {
+  color: var(--accent-2);
+  white-space: nowrap;
+}
+
+.group-form {
+  margin: 0 14px 12px;
+  padding: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.group-form > input {
+  width: 100%;
+  padding: 10px 11px;
+  color: var(--text-primary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.group-members {
+  display: grid;
+  gap: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+
+.group-members label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.group-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.group-form-actions button {
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--bg-elevated-2);
+}
+
+.group-form-actions .btn-primary {
+  width: auto;
+  margin: 0;
+}
+
 .sidebar-list {
   flex: 1;
   overflow-y: auto;

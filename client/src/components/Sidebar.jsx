@@ -10,10 +10,15 @@ export default function Sidebar({
   activeChatId,
   onOpenChat,
   onStartChat,
+  onStartGroup,
   onLogout,
 }) {
   const [tab, setTab] = useState("chats"); // "chats" | "people"
   const [query, setQuery] = useState("");
+  const [showGroupForm, setShowGroupForm] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [groupError, setGroupError] = useState("");
 
   const filteredChats = useMemo(() => {
     if (!query.trim()) return chats;
@@ -28,6 +33,19 @@ export default function Sidebar({
       u.displayName.toLowerCase().includes(query.toLowerCase())
     );
   }, [users, query]);
+
+  async function handleCreateGroup(event) {
+    event.preventDefault();
+    setGroupError("");
+    try {
+      await onStartGroup(groupName, selectedIds);
+      setGroupName("");
+      setSelectedIds([]);
+      setShowGroupForm(false);
+    } catch (error) {
+      setGroupError(error.message);
+    }
+  }
 
   return (
     <div className="sidebar">
@@ -61,7 +79,40 @@ export default function Sidebar({
         >
           Люди
         </button>
+        <button className="sidebar-tab group-tab" onClick={() => setShowGroupForm(true)} title="Создать группу">
+          + Группа
+        </button>
       </div>
+
+      {showGroupForm && (
+        <form className="group-form" onSubmit={handleCreateGroup}>
+          <input
+            placeholder="Название группы"
+            value={groupName}
+            onChange={(event) => setGroupName(event.target.value)}
+            required
+          />
+          <div className="group-members">
+            {users.map((user) => (
+              <label key={user.uid}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(user.uid)}
+                  onChange={() => setSelectedIds((ids) => ids.includes(user.uid)
+                    ? ids.filter((id) => id !== user.uid)
+                    : [...ids, user.uid])}
+                />
+                {user.displayName}
+              </label>
+            ))}
+          </div>
+          {groupError && <div className="auth-error">{groupError}</div>}
+          <div className="group-form-actions">
+            <button type="button" onClick={() => setShowGroupForm(false)}>Отмена</button>
+            <button className="btn-primary" type="submit">Создать</button>
+          </div>
+        </form>
+      )}
 
       <div className="sidebar-list">
         {tab === "chats" &&

@@ -8,6 +8,7 @@ import { createAdapter } from "@socket.io/redis-adapter";
 import { auth, db } from "./firebaseAdmin.js";
 import admin from "firebase-admin";
 import fs from "fs";
+import { randomUUID } from "crypto";
 import { initRedis, getRedisClient, closeRedis } from "./redisConfig.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -88,6 +89,21 @@ app.get("/api/chats", requireAuth, async (req, res) => {
   const chats = await Promise.all(
     snap.docs.map(async (doc) => {
       const data = doc.data();
+      if (data.type === "group") {
+        const memberSnap = await db.collection("users").where("uid", "in", data.members.slice(0, 10)).get();
+        return {
+          chatId: doc.id,
+          peer: {
+            uid: null,
+            displayName: data.name || "Группа",
+            photoColor: "#00B894",
+            type: "group",
+            members: memberSnap.docs.map((member) => member.data()),
+          },
+          lastMessage: data.lastMessage || null,
+          updatedAt: data.updatedAt || null,
+        };
+      }
       const peerId = data.members.find((m) => m !== req.uid);
       const peerSnap = await db.collection("users").doc(peerId).get();
       return {
@@ -119,6 +135,27 @@ app.post("/api/chats", requireAuth, async (req, res) => {
     });
   }
   res.json({ chatId });
+});
+
+// Create a group chat with the current user and selected members.
+app.post("/api/groups", requireAuth, async (req, res) => {
+  const name = String(req.body.name || "").trim().slice(0, 80);
+  const memberIds = Array.isArray(req.body.memberIds) ? req.body.memberIds : [];
+  const members = [...new Set([req.uid, ...memberIds.filter((id) => typeof id === "string")])];
+  if (!name) return res.status(400).json({ error: "Название группы обязательно" });
+  if (members.length < 2) return res.status(400).json({ error: "Выберите хотя бы одного участника" });
+
+  const chatId = `group_${randomUUID()}`;
+  await db.collection("chats").doc(chatId).set({
+    type: "group",
+    name,
+    members,
+    createdBy: req.uid,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    lastMessage: null,
+  });
+  res.json({ chatId, name, members });
 });
 
 // Message history for a chat
@@ -199,8 +236,11 @@ io.on("connection", (socket) => {
     };
     io.to(`chat:${chatId}`).emit("message:new", payload);
     // notify peer's chat list even if they're not in the chat room
-    const peerId = chatSnap.data().members.find((m) => m !== uid);
-    io.to(`user:${peerId}`).emit("chat:updated", { chatId, lastMessage: message.text, senderId: uid });
+    for (const memberId of chatSnap.data().members) {
+      if (memberId !== uid) {
+        io.to(`user:${memberId}`).emit("chat:updated", { chatId, lastMessage: message.text, senderId: uid });
+      }
+    }
     if (ack) ack({ ok: true, id: msgRef.id });
   });
 

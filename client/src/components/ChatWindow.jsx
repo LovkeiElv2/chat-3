@@ -84,9 +84,9 @@ export default function ChatWindow({ chatId, peer, me, token, socket, isPeerOnli
         <Avatar name={peer.displayName} color={peer.photoColor} size={38} online={isPeerOnline} />
         <div>
           <div className="chat-header-name">{peer.displayName}</div>
-          <div className="chat-header-status">
-            {peerTyping ? "печатает…" : isPeerOnline ? "в сети" : formatLastSeen(peer.lastSeen?._seconds)}
-          </div>
+          <div className="chat-header-status">{peer.type === "group"
+            ? `${peer.members?.length || 0} участников`
+            : peerTyping ? "печатает…" : isPeerOnline ? "в сети" : formatLastSeen(peer.lastSeen?._seconds)}</div>
         </div>
       </div>
 

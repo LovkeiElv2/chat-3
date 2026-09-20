@@ -121,6 +121,24 @@ export default function App() {
     openChat(chatId, peer);
   }
 
+  async function startGroup(name, memberIds) {
+    const group = await apiFetch("/api/groups", {
+      token,
+      method: "POST",
+      body: { name, memberIds },
+    });
+    const members = users.filter((user) => group.members.includes(user.uid) || user.uid === me.uid);
+    const peer = {
+      uid: null,
+      displayName: group.name,
+      photoColor: "#00B894",
+      type: "group",
+      members,
+    };
+    setChats((prev) => [{ chatId: group.chatId, peer, lastMessage: null, updatedAt: null }, ...prev]);
+    openChat(group.chatId, peer);
+  }
+
   function handleLogout() {
     signOut(auth);
   }
@@ -149,6 +167,7 @@ export default function App() {
         activeChatId={active?.chatId}
         onOpenChat={openChat}
         onStartChat={startChat}
+        onStartGroup={startGroup}
         onLogout={handleLogout}
       />
       {active ? (
