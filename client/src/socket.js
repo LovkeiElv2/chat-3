@@ -1,6 +1,10 @@
 import { io } from "socket.io-client";
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || window.location.origin;
+const configuredServerUrl = import.meta.env.VITE_SERVER_URL;
+const SERVER_URL =
+  import.meta.env.PROD && configuredServerUrl?.includes("localhost")
+    ? window.location.origin
+    : configuredServerUrl || window.location.origin;
 
 let socket = null;
 

@@ -1,4 +1,8 @@
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || window.location.origin;
+const configuredServerUrl = import.meta.env.VITE_SERVER_URL;
+const SERVER_URL =
+  import.meta.env.PROD && configuredServerUrl?.includes("localhost")
+    ? window.location.origin
+    : configuredServerUrl || window.location.origin;
 
 export function initialsOf(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
