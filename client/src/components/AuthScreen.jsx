@@ -126,6 +126,12 @@ function translateError(code) {
     "auth/user-not-found": "Пользователь не найден.",
     "auth/wrong-password": "Неверный пароль.",
     "auth/invalid-credential": "Неверный email или пароль.",
+    "auth/operation-not-allowed": "В Firebase не включён вход по Email/Password.",
+    "auth/network-request-failed": "Не удалось подключиться к Firebase. Проверьте интернет и настройки домена.",
+    "auth/invalid-api-key": "Неверный Firebase Web API key в настройках Render.",
+    "auth/invalid-continue-uri": "Неверная настройка Firebase Auth домена.",
+    "auth/configuration-not-found": "Firebase Auth не настроен для этого проекта.",
+    "auth/internal-error": "Firebase временно вернул внутреннюю ошибку.",
   };
-  return map[code] || "Что-то пошло не так. Попробуйте ещё раз.";
+  return map[code] || `Ошибка Firebase (${code || "unknown"}). Проверьте настройки Auth.`;
 }
