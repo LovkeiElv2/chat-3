@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "./firebase";
+import { auth, missingConfig } from "./firebase";
 import { connectSocket, disconnectSocket } from "./socket";
 import { apiFetch } from "./utils";
 import AuthScreen from "./components/AuthScreen";
@@ -27,6 +27,11 @@ export default function App() {
 
   // --- auth lifecycle ---
   useEffect(() => {
+    if (!auth) {
+      setAuthUser(null);
+      return undefined;
+    }
+
     return onAuthStateChanged(auth, async (user) => {
       setAuthUser(user);
       if (!user) {
@@ -117,7 +122,7 @@ export default function App() {
   }
 
   if (!authUser || !me) {
-    return <AuthScreen />;
+    return <AuthScreen configError={missingConfig.length > 0} />;
   }
 
   return (
