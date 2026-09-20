@@ -16,6 +16,7 @@ function colorFor(uid) {
 
 export default function App() {
   const [authUser, setAuthUser] = useState(undefined); // undefined = loading
+  const [authError, setAuthError] = useState("");
   const [token, setToken] = useState(null);
   const [me, setMe] = useState(null);
   const [socket, setSocket] = useState(null);
@@ -34,6 +35,7 @@ export default function App() {
 
     return onAuthStateChanged(auth, async (user) => {
       setAuthUser(user);
+      setAuthError("");
       if (!user) {
         setToken(null);
         setMe(null);
@@ -41,14 +43,20 @@ export default function App() {
         setSocket(null);
         return;
       }
-      const idToken = await user.getIdToken();
-      setToken(idToken);
-      const profile = await apiFetch("/api/users/sync", {
-        token: idToken,
-        method: "POST",
-        body: { displayName: user.displayName, photoColor: colorFor(user.uid) },
-      });
-      setMe(profile);
+      try {
+        const idToken = await user.getIdToken();
+        setToken(idToken);
+        const profile = await apiFetch("/api/users/sync", {
+          token: idToken,
+          method: "POST",
+          body: { displayName: user.displayName, photoColor: colorFor(user.uid) },
+        });
+        setMe(profile);
+      } catch (error) {
+        setAuthError(`Вход выполнен, но сервер не синхронизировал профиль: ${error.message}`);
+        setToken(null);
+        setMe(null);
+      }
     });
   }, []);
 
@@ -122,7 +130,13 @@ export default function App() {
   }
 
   if (!authUser || !me) {
-    return <AuthScreen configError={missingConfig.length > 0} missingConfig={missingConfig} />;
+    return (
+      <AuthScreen
+        configError={missingConfig.length > 0}
+        missingConfig={missingConfig}
+        externalError={authError}
+      />
+    );
   }
 
   return (

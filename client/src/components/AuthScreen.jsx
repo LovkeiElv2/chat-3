@@ -6,7 +6,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 
-export default function AuthScreen({ configError = false, missingConfig = [] }) {
+export default function AuthScreen({ configError = false, missingConfig = [], externalError = "" }) {
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,7 +55,7 @@ export default function AuthScreen({ configError = false, missingConfig = [] }) 
             : "Это займёт меньше минуты."}
         </p>
 
-        {error && <div className="auth-error">{error}</div>}
+        {(error || externalError) && <div className="auth-error">{error || externalError}</div>}
 
         <form onSubmit={handleSubmit}>
           {mode === "register" && (
