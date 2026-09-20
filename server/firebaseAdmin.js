@@ -1,15 +1,22 @@
 import admin from "firebase-admin";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
 
 function loadServiceAccount() {
   const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH;
+
+  if (keyPath) {
+    return JSON.parse(fs.readFileSync(keyPath, "utf8"));
+  }
+
   if (!b64) {
     throw new Error(
-      "FIREBASE_SERVICE_ACCOUNT_BASE64 не задан. Добавьте его в Render: " +
-        "Dashboard -> nexa-chat -> Environment. Значение должно быть Base64 " +
-        "от JSON Firebase service account."
+      "FIREBASE_SERVICE_ACCOUNT_BASE64 не задан. Для локального запуска укажите " +
+        "FIREBASE_SERVICE_ACCOUNT_KEY_PATH, а в Render добавьте Base64-ключ в " +
+        "Dashboard -> nexa-chat -> Environment."
     );
   }
   const json = Buffer.from(b64, "base64").toString("utf8");
