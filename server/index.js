@@ -255,7 +255,8 @@ async function startServer() {
       // Setup Redis adapter for Socket.io
       const pubClient = redisClient.duplicate();
       const subClient = redisClient.duplicate();
-      
+
+      await Promise.all([pubClient.connect(), subClient.connect()]);
       io.adapter(createAdapter(pubClient, subClient));
       console.log("✅ Socket.io Redis adapter configured");
     } else {
