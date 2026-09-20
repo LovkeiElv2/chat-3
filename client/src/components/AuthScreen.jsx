@@ -6,7 +6,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 
-export default function AuthScreen({ configError = false }) {
+export default function AuthScreen({ configError = false, missingConfig = [] }) {
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,7 +18,9 @@ export default function AuthScreen({ configError = false }) {
     e.preventDefault();
     setError("");
     if (configError) {
-      setError("Регистрация временно недоступна: Firebase Web config не добавлен в Render.");
+      setError(
+        `Регистрация временно недоступна. Добавьте в Render: ${missingConfig.join(", ")}.`
+      );
       return;
     }
     setLoading(true);

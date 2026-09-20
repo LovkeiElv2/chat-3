@@ -122,7 +122,7 @@ export default function App() {
   }
 
   if (!authUser || !me) {
-    return <AuthScreen configError={missingConfig.length > 0} />;
+    return <AuthScreen configError={missingConfig.length > 0} missingConfig={missingConfig} />;
   }
 
   return (
