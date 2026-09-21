@@ -55,6 +55,18 @@ function chatIdFor(uidA, uidB) {
   return [uidA, uidB].sort().join("_");
 }
 
+async function getUsersByIds(userIds) {
+  const uniqueIds = [...new Set(userIds)].filter(Boolean);
+  const batches = [];
+  for (let index = 0; index < uniqueIds.length; index += 10) {
+    batches.push(uniqueIds.slice(index, index + 10));
+  }
+  const snapshots = await Promise.all(
+    batches.map((batch) => db.collection("users").where("uid", "in", batch).get())
+  );
+  return snapshots.flatMap((snapshot) => snapshot.docs.map((doc) => doc.data()));
+}
+
 function asyncHandler(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
@@ -122,7 +134,7 @@ app.get("/api/chats", requireAuth, asyncHandler(async (req, res) => {
     snap.docs.map(async (doc) => {
       const data = doc.data();
       if (data.type === "group") {
-        const memberSnap = await db.collection("users").where("uid", "in", data.members.slice(0, 10)).get();
+        const members = await getUsersByIds(data.members);
         return {
           chatId: doc.id,
           peer: {
@@ -130,7 +142,7 @@ app.get("/api/chats", requireAuth, asyncHandler(async (req, res) => {
             displayName: data.name || "Группа",
             photoColor: "#00B894",
             type: "group",
-            members: memberSnap.docs.map((member) => member.data()),
+            members,
           },
           lastMessage: data.lastMessage || null,
           updatedAt: data.updatedAt || null,
@@ -204,11 +216,8 @@ app.get("/api/chats/:chatId/messages", requireAuth, asyncHandler(async (req, res
     .orderBy("createdAt", "asc")
     .limit(200)
     .get();
-  const memberSnap = await db
-    .collection("users")
-    .where("uid", "in", chatSnap.data().members.slice(0, 10))
-    .get();
-  const memberNames = new Map(memberSnap.docs.map((doc) => [doc.id, doc.data().displayName]));
+  const members = await getUsersByIds(chatSnap.data().members);
+  const memberNames = new Map(members.map((member) => [member.uid, member.displayName]));
   res.json(msgsSnap.docs.map((d) => ({
     id: d.id,
     ...d.data(),
