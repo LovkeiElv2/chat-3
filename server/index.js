@@ -207,8 +207,15 @@ io.on("connection", (socket) => {
   socket.join(`user:${uid}`);
   io.emit("presence:update", { uid, online: true });
 
-  socket.on("chat:join", (chatId) => {
+  socket.on("chat:join", async (chatId, ack) => {
+    if (!chatId) return;
+    const chatSnap = await db.collection("chats").doc(chatId).get();
+    if (!chatSnap.exists || !chatSnap.data().members.includes(uid)) {
+      if (ack) ack({ ok: false, error: "Forbidden" });
+      return;
+    }
     socket.join(`chat:${chatId}`);
+    if (ack) ack({ ok: true });
   });
 
   socket.on("chat:leave", (chatId) => {
