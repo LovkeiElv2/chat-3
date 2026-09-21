@@ -55,6 +55,10 @@ function chatIdFor(uidA, uidB) {
   return [uidA, uidB].sort().join("_");
 }
 
+function asyncHandler(handler) {
+  return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
 async function verifyToken(idToken) {
   if (!idToken) return null;
   try {
@@ -80,7 +84,7 @@ async function requireAuth(req, res, next) {
 // ---------- REST API ----------
 
 // Create/update the user's public profile doc (call right after register/login)
-app.post("/api/users/sync", requireAuth, async (req, res) => {
+app.post("/api/users/sync", requireAuth, asyncHandler(async (req, res) => {
   const { displayName, photoColor } = req.body;
   const ref = db.collection("users").doc(req.uid);
   const snap = await ref.get();
@@ -96,19 +100,19 @@ app.post("/api/users/sync", requireAuth, async (req, res) => {
   await ref.set(base, { merge: true });
   const updated = await ref.get();
   res.json(updated.data());
-});
+}));
 
 // List all other users (simple directory)
-app.get("/api/users", requireAuth, async (req, res) => {
+app.get("/api/users", requireAuth, asyncHandler(async (req, res) => {
   const snap = await db.collection("users").get();
   const users = snap.docs
     .map((d) => d.data())
     .filter((u) => u.uid !== req.uid);
   res.json(users);
-});
+}));
 
 // List chats for current user, each with peer profile + last message
-app.get("/api/chats", requireAuth, async (req, res) => {
+app.get("/api/chats", requireAuth, asyncHandler(async (req, res) => {
   const snap = await db
     .collection("chats")
     .where("members", "array-contains", req.uid)
@@ -145,10 +149,10 @@ app.get("/api/chats", requireAuth, async (req, res) => {
 
   chats.sort((a, b) => (b.updatedAt?._seconds || 0) - (a.updatedAt?._seconds || 0));
   res.json(chats);
-});
+}));
 
 // Get or create a 1:1 chat with a peer
-app.post("/api/chats", requireAuth, async (req, res) => {
+app.post("/api/chats", requireAuth, asyncHandler(async (req, res) => {
   const { peerId } = req.body;
   if (!peerId) return res.status(400).json({ error: "peerId required" });
   const chatId = chatIdFor(req.uid, peerId);
@@ -163,10 +167,10 @@ app.post("/api/chats", requireAuth, async (req, res) => {
     });
   }
   res.json({ chatId });
-});
+}));
 
 // Create a group chat with the current user and selected members.
-app.post("/api/groups", requireAuth, async (req, res) => {
+app.post("/api/groups", requireAuth, asyncHandler(async (req, res) => {
   const name = String(req.body.name || "").trim().slice(0, 80);
   const memberIds = Array.isArray(req.body.memberIds) ? req.body.memberIds : [];
   const members = [...new Set([req.uid, ...memberIds.filter((id) => typeof id === "string")])];
@@ -184,10 +188,10 @@ app.post("/api/groups", requireAuth, async (req, res) => {
     lastMessage: null,
   });
   res.json({ chatId, name, members });
-});
+}));
 
 // Message history for a chat
-app.get("/api/chats/:chatId/messages", requireAuth, async (req, res) => {
+app.get("/api/chats/:chatId/messages", requireAuth, asyncHandler(async (req, res) => {
   const { chatId } = req.params;
   const chatSnap = await db.collection("chats").doc(chatId).get();
   if (!chatSnap.exists || !chatSnap.data().members.includes(req.uid)) {
@@ -210,6 +214,12 @@ app.get("/api/chats/:chatId/messages", requireAuth, async (req, res) => {
     ...d.data(),
     senderName: memberNames.get(d.data().senderId) || "Пользователь",
   })));
+}));
+
+app.use((error, req, res, next) => {
+  console.error("API error:", error);
+  if (res.headersSent) return next(error);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 function randomColor() {
