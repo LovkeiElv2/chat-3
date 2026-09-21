@@ -1,6 +1,8 @@
 import { createClient } from "redis";
 
 let redisClient = null;
+let redisPubClient = null;
+let redisSubClient = null;
 
 export async function initRedis() {
   if (redisClient) return redisClient;
@@ -51,9 +53,16 @@ export function getRedisClient() {
   return redisClient;
 }
 
+export function setRedisAdapterClients(pubClient, subClient) {
+  redisPubClient = pubClient;
+  redisSubClient = subClient;
+}
+
 export async function closeRedis() {
-  if (redisClient) {
-    await redisClient.quit();
-    redisClient = null;
+  for (const client of [redisPubClient, redisSubClient, redisClient]) {
+    if (client?.isOpen) await client.quit();
   }
+  redisPubClient = null;
+  redisSubClient = null;
+  redisClient = null;
 }

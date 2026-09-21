@@ -9,7 +9,7 @@ import { auth, db } from "./firebaseAdmin.js";
 import admin from "firebase-admin";
 import fs from "fs";
 import { randomUUID } from "crypto";
-import { initRedis, getRedisClient, closeRedis } from "./redisConfig.js";
+import { initRedis, getRedisClient, closeRedis, setRedisAdapterClients } from "./redisConfig.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 4000;
@@ -365,6 +365,7 @@ async function startServer() {
       const subClient = redisClient.duplicate();
 
       await Promise.all([pubClient.connect(), subClient.connect()]);
+      setRedisAdapterClients(pubClient, subClient);
       io.adapter(createAdapter(pubClient, subClient));
       console.log("✅ Socket.io Redis adapter configured");
     } else {
