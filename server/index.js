@@ -24,6 +24,31 @@ const io = new Server(server, {
   cors: { origin: CLIENT_ORIGIN, methods: ["GET", "POST"] },
 });
 
+const requestBuckets = new Map();
+const messageBuckets = new Map();
+
+function allowRequest(bucketMap, key, limit, windowMs) {
+  const now = Date.now();
+  const bucket = bucketMap.get(key);
+  if (!bucket || now - bucket.startedAt >= windowMs) {
+    bucketMap.set(key, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (bucket.count >= limit) return false;
+  bucket.count += 1;
+  return true;
+}
+
+setInterval(() => {
+  const cutoff = Date.now() - 60_000;
+  for (const [key, bucket] of requestBuckets) {
+    if (bucket.startedAt < cutoff) requestBuckets.delete(key);
+  }
+  for (const [key, bucket] of messageBuckets) {
+    if (bucket.startedAt < cutoff) messageBuckets.delete(key);
+  }
+}, 60_000).unref();
+
 // ---------- helpers ----------
 
 function chatIdFor(uidA, uidB) {
@@ -46,6 +71,9 @@ async function requireAuth(req, res, next) {
   const decoded = await verifyToken(token);
   if (!decoded) return res.status(401).json({ error: "Unauthorized" });
   req.uid = decoded.uid;
+  if (!allowRequest(requestBuckets, req.uid, 120, 60_000)) {
+    return res.status(429).json({ error: "Too many requests" });
+  }
   next();
 }
 
@@ -225,6 +253,10 @@ io.on("connection", (socket) => {
   socket.on("message:send", async ({ chatId, text }, ack) => {
     const trimmed = (text || "").trim();
     if (!trimmed || !chatId) return;
+    if (!allowRequest(messageBuckets, uid, 30, 10_000)) {
+      if (ack) ack({ ok: false, error: "Too many messages" });
+      return;
+    }
     const chatRef = db.collection("chats").doc(chatId);
     const chatSnap = await chatRef.get();
     if (!chatSnap.exists || !chatSnap.data().members.includes(uid)) return;
